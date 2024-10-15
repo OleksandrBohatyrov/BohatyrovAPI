@@ -15,7 +15,7 @@ namespace BohatyrovAPI.Controllers
             return "Hello world at " + DateTime.Now;
         }
 
-        // GET: primitiivid/hello-variable/mari
+        // GET: primitiivid/hello-variable/sasa
         [HttpGet("hello-variable/{nimi}")]
         public string HelloVariable(string nimi)
         {

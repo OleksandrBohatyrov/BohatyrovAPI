@@ -38,7 +38,7 @@ namespace BohatyrovAPI.Controllers
             return "Kustutatud!";
         }
 
-        // POST https://localhost:7198/tooted/lisa/1/Coca/1.5/true
+        // POST https://localhost:7198/tooted/lisa/1/Coca/1.5/true  
         [HttpPost("lisa/{id}/{nimi}/{hind}/{aktiivne}")]
         public List<Toode> Add(int id, string nimi, double hind, bool aktiivne)
         {
