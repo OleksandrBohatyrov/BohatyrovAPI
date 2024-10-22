@@ -1,4 +1,6 @@
-﻿namespace BohatyrovAPI.Models
+﻿using System.Collections.Generic;
+
+namespace BohatyrovAPI.Models
 {
     public class Toode
     {
@@ -7,12 +9,16 @@
         public double Price { get; set; }
         public bool IsActive { get; set; }
 
+        // Связь многие-ко-многим с Kasutaja
+        public List<KasutajaToode> KasutajaTooted { get; set; }
+
         public Toode(int id, string name, double price, bool isActive)
         {
             Id = id;
             Name = name;
             Price = price;
             IsActive = isActive;
+            KasutajaTooted = new List<KasutajaToode>();
         }
     }
 }

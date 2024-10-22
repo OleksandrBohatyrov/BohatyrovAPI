@@ -1,5 +1,7 @@
-﻿using BohatyrovAPI.Models;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using BohatyrovAPI.Models;
+using System.Linq;
+using BohatyrovAPI.Data;
 
 namespace BohatyrovAPI.Controllers
 {
@@ -7,63 +9,58 @@ namespace BohatyrovAPI.Controllers
     [ApiController]
     public class TootedController : ControllerBase
     {
-        private static List<Toode> _tooted = new()
-        {
-            new Toode(1,"Koola", 1.5, true),
-            new Toode(2,"Fanta", 1.0, false),
-            new Toode(3,"Sprite", 1.7, true),
-            new Toode(4,"Vichy", 2.0, true),
-            new Toode(5,"Vitamin well", 2.5, true)
-        };
+        private readonly AppDbContext _context;
 
-        // GET https://localhost:7198/tooted
-        [HttpGet]
-        public List<Toode> Get()
+        public TootedController(AppDbContext context)
         {
-            return _tooted;
+            _context = context;
         }
 
-        // DELETE https://localhost:7198/tooted/kustuta/0
-        [HttpDelete("kustuta/{index}")]
-        public List<Toode> Delete(int index)
+        // Проверить, есть ли товар у пользователя
+        [HttpGet("has-toode/{kasutajaId}/{toodeId}")]
+        public ActionResult<bool> HasToode(int kasutajaId, int toodeId)
         {
-            _tooted.RemoveAt(index);
-            return _tooted;
+            var kasutajaToode = _context.KasutajaTooted
+                .FirstOrDefault(kt => kt.KasutajaId == kasutajaId && kt.ToodeId == toodeId);
+
+            return Ok(kasutajaToode != null);
         }
 
-        [HttpDelete("kustuta2/{index}")]
-        public string Delete2(int index)
+        // Покупка товара пользователем
+        [HttpPost("osta/{id}/{kasutajaId}")]
+        public IActionResult Buy(int id, int kasutajaId)
         {
-            _tooted.RemoveAt(index);
-            return "Kustutatud!";
-        }
-
-        // POST https://localhost:7198/tooted/lisa/1/Coca/1.5/true  
-        [HttpPost("lisa/{id}/{nimi}/{hind}/{aktiivne}")]
-        public List<Toode> Add(int id, string nimi, double hind, bool aktiivne)
-        {
-            Toode toode = new Toode(id, nimi, hind, aktiivne);
-            _tooted.Add(toode);
-            return _tooted;
-        }
-
-        [HttpPost("lisa2")]
-        public List<Toode> Add2(int id, string nimi, double hind, bool aktiivne)
-        {
-            Toode toode = new Toode(id, nimi, hind, aktiivne);
-            _tooted.Add(toode);
-            return _tooted;
-        }
-
-        // PATCH https://localhost:7198/tooted/hind-dollaritesse/1.5
-        [HttpPatch("hind-dollaritesse/{kurss}")]
-        public List<Toode> UpdatePrices(double kurss)
-        {
-            for (int i = 0; i < _tooted.Count; i++)
+            var toode = _context.Tooted.FirstOrDefault(t => t.Id == id);
+            if (toode == null || !toode.IsActive)
             {
-                _tooted[i].Price = _tooted[i].Price * kurss;
+                return NotFound("Товар недоступен.");
             }
-            return _tooted;
+
+            var kasutaja = _context.Kasutajad.FirstOrDefault(k => k.Id == kasutajaId);
+            if (kasutaja == null)
+            {
+                return NotFound("Пользователь не найден.");
+            }
+
+            // Проверка, есть ли уже товар у пользователя
+            var kasutajaToode = _context.KasutajaTooted
+                .FirstOrDefault(kt => kt.KasutajaId == kasutajaId && kt.ToodeId == id);
+
+            if (kasutajaToode != null)
+            {
+                return BadRequest("Этот товар уже есть у пользователя.");
+            }
+
+            // Добавляем товар пользователю
+            _context.KasutajaTooted.Add(new KasutajaToode
+            {
+                KasutajaId = kasutajaId,
+                ToodeId = id
+            });
+
+            _context.SaveChanges();
+
+            return Ok($"Пользователь {kasutaja.Eesnimi} купил {toode.Name} за {toode.Price} евро.");
         }
     }
 }
